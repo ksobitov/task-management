@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: task-management-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-taskuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskpass}
+      POSTGRES_DB: ${POSTGRES_DB:-taskdb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskuser} -d ${POSTGRES_DB:-taskdb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: task-management-api
+    environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-taskuser}:${POSTGRES_PASSWORD:-taskpass}@postgres:5432/${POSTGRES_DB:-taskdb}?sslmode=disable
+      - PORT=8080
+      - GIN_MODE=debug
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./api:/app
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: task-management-client
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:

@@ -1,0 +1,11 @@
+.task-list {
+  margin-top: 1rem;
+}
+
+.task-list-message {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  background: #2a2a2a;
+  border-radius: 8px;
+}
